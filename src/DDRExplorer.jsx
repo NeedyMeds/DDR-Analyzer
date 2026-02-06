@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Search, Database, Table, Layout, FileText, Link2, List, ChevronRight, ChevronDown, ExternalLink, Layers, GitBranch, Grid3X3, Box, Code, Hash, Lock, Zap, Eye, Play, ArrowRight, Filter, X, BarChart3, AlertCircle, Settings, Upload, Sparkles, Shield, Gauge, FileSearch, Trash2, AlertTriangle, ArrowUpDown, ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
+import { Search, Database, Table, Layout, FileText, Link2, List, ChevronRight, ChevronDown, ExternalLink, Layers, GitBranch, Grid3X3, Box, Code, Hash, Lock, Zap, Eye, Play, ArrowRight, Filter, X, BarChart3, AlertCircle, Settings, Upload, Sparkles, Shield, Gauge, FileSearch, Trash2, AlertTriangle, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, User, KeyRound, ShieldCheck } from 'lucide-react';
 import parseXMLFiles, { analyzeDatabase } from './ddr-parser';
 
 // Modern light color palette
@@ -13,6 +13,9 @@ const C = {
   vl: { bg: 'bg-gradient-to-br from-yellow-500 to-amber-500', light: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-600', hover: 'hover:bg-yellow-100' },
   ext: { bg: 'bg-gradient-to-br from-red-500 to-red-600', light: 'bg-red-50', border: 'border-red-200', text: 'text-red-600', hover: 'hover:bg-red-100' },
   cf: { bg: 'bg-gradient-to-br from-indigo-500 to-indigo-600', light: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-600', hover: 'hover:bg-indigo-100' },
+  account: { bg: 'bg-gradient-to-br from-slate-500 to-slate-600', light: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600', hover: 'hover:bg-slate-100' },
+  privset: { bg: 'bg-gradient-to-br from-orange-500 to-red-500', light: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600', hover: 'hover:bg-orange-100' },
+  extpriv: { bg: 'bg-gradient-to-br from-teal-500 to-teal-600', light: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-600', hover: 'hover:bg-teal-100' },
 };
 
 // Data type colors - light theme
@@ -33,7 +36,7 @@ const Badge = ({ color = 'field', size = 'sm', children }) => {
 
 const Icon = ({ type, size = 14, className = '' }) => {
   const p = { size, className };
-  const icons = { table: Table, field: Grid3X3, to: Layers, layout: Layout, script: Code, rel: GitBranch, vl: List, ext: ExternalLink, db: Database, cf: Settings };
+  const icons = { table: Table, field: Grid3X3, to: Layers, layout: Layout, script: Code, rel: GitBranch, vl: List, ext: ExternalLink, db: Database, cf: Settings, account: User, privset: KeyRound, extpriv: ShieldCheck };
   const I = icons[type] || Box;
   return <I {...p} />;
 };
@@ -610,10 +613,238 @@ const RelDetail = ({ rel, dbName, onNav }) => {
   );
 };
 
+// Account detail panel
+const AccountDetail = ({ account, dbName, data }) => {
+  // Find accounts with same privilege set
+  const samePrivSet = useMemo(() => {
+    if (!account.privilegeSet || !data?.databases) return [];
+    const db = data.databases.find(d => d.name === dbName);
+    return (db?.accounts || []).filter(a => a.privilegeSet === account.privilegeSet && a.name !== account.name);
+  }, [account, dbName, data]);
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="p-5 border-b border-gray-200 bg-white">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 ${C.account.bg} rounded-xl flex items-center justify-center shadow-lg`}>
+            <User size={18} className="text-white" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-800 text-lg">{account.name}</h2>
+            <div className="text-sm text-gray-500 flex items-center gap-2">
+              <Badge color={account.status === 'Active' ? 'layout' : 'ext'} size="xs">{account.status}</Badge>
+              {account.managedBy && <span className="text-gray-400">· {account.managedBy}</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto p-4 space-y-3 bg-gray-50">
+        {/* Security warnings */}
+        {account.emptyPassword && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-sm text-red-700">
+              <AlertTriangle size={14} />
+              <span className="font-medium">Empty Password</span>
+            </div>
+            <p className="text-xs text-red-600 mt-1">This account has no password set.</p>
+          </div>
+        )}
+
+        {/* Privilege Set */}
+        <Section title="Privilege Set" count={1} icon={<KeyRound size={14} className="text-orange-500" />} color="privset">
+          <div className="p-3">
+            <div className="flex items-center gap-2">
+              <Badge color="privset">{account.privilegeSet || 'None'}</Badge>
+              {account.changePasswordOnNextLogin && (
+                <Badge color="ext" size="xs">Must change password</Badge>
+              )}
+            </div>
+          </div>
+        </Section>
+
+        {/* Other accounts with same privilege set */}
+        {samePrivSet.length > 0 && (
+          <Section title="Other Accounts with Same Privileges" count={samePrivSet.length} icon={<User size={14} className="text-slate-500" />} color="account">
+            <div className="p-3 flex flex-wrap gap-1.5">
+              {samePrivSet.map((a, i) => (
+                <Badge key={i} color="account">{a.name}</Badge>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Description */}
+        {account.description && (
+          <Section title="Description" icon={<FileText size={14} className="text-gray-500" />} color="account">
+            <div className="p-3 text-sm text-gray-600">{account.description}</div>
+          </Section>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Privilege Set detail panel
+const PrivSetDetail = ({ privset, dbName, data }) => {
+  // Find accounts using this privilege set
+  const accounts = useMemo(() => {
+    if (!data?.databases) return [];
+    const db = data.databases.find(d => d.name === dbName);
+    return (db?.accounts || []).filter(a => a.privilegeSet === privset.name);
+  }, [privset, dbName, data]);
+
+  // Find extended privileges that include this set
+  const extPrivs = useMemo(() => {
+    if (!data?.databases) return [];
+    const db = data.databases.find(d => d.name === dbName);
+    return (db?.extendedPrivileges || []).filter(ep => ep.privilegeSets?.includes(privset.name));
+  }, [privset, dbName, data]);
+
+  const accessLevels = [
+    { label: 'Records', value: privset.records, icon: Table },
+    { label: 'Layouts', value: privset.layouts, canCreate: privset.layoutCreation, icon: Layout },
+    { label: 'Scripts', value: privset.scripts, canCreate: privset.scriptCreation, icon: Code },
+    { label: 'Value Lists', value: privset.valueLists, canCreate: privset.valueListCreation, icon: List },
+  ];
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="p-5 border-b border-gray-200 bg-white">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 ${C.privset.bg} rounded-xl flex items-center justify-center shadow-lg`}>
+            <KeyRound size={18} className="text-white" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-800 text-lg">{privset.name}</h2>
+            {privset.comment && <div className="text-sm text-gray-500">{privset.comment}</div>}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto p-4 space-y-3 bg-gray-50">
+        {/* Access Levels */}
+        <Section title="Access Levels" icon={<Shield size={14} className="text-orange-500" />} color="privset" defaultOpen={true}>
+          <div className="p-3 space-y-2">
+            {accessLevels.map((al, i) => (
+              <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <al.icon size={14} className="text-gray-400" />
+                  {al.label}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge color={al.value === 'NoAccess' ? 'ext' : al.value === 'Modifiable' ? 'layout' : 'field'} size="xs">
+                    {al.value || 'N/A'}
+                  </Badge>
+                  {al.canCreate && <Badge color="layout" size="xs">+Create</Badge>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Permissions */}
+        <Section title="Permissions" icon={<Lock size={14} className="text-orange-500" />} color="privset">
+          <div className="p-3 flex flex-wrap gap-2">
+            {privset.printing && <Badge color="layout" size="xs">Printing</Badge>}
+            {privset.exporting && <Badge color="layout" size="xs">Exporting</Badge>}
+            {privset.manageAccounts && <Badge color="ext" size="xs">Manage Accounts</Badge>}
+            {privset.allowModifyPassword && <Badge color="field" size="xs">Modify Password</Badge>}
+            {privset.overrideValidationWarning && <Badge color="field" size="xs">Override Validation</Badge>}
+            {!privset.printing && !privset.exporting && !privset.manageAccounts && !privset.allowModifyPassword && (
+              <span className="text-sm text-gray-400">No additional permissions</span>
+            )}
+          </div>
+        </Section>
+
+        {/* Menu Access */}
+        <Section title="Menu Access" icon={<Settings size={14} className="text-gray-500" />} color="account">
+          <div className="p-3">
+            <Badge color={privset.menu === 'All' ? 'layout' : privset.menu === 'Minimal' ? 'ext' : 'field'}>
+              {privset.menu || 'All'}
+            </Badge>
+          </div>
+        </Section>
+
+        {/* Accounts using this set */}
+        <Section title="Accounts Using This Set" count={accounts.length} icon={<User size={14} className="text-slate-500" />} color="account">
+          <div className="p-3 flex flex-wrap gap-1.5">
+            {accounts.length > 0 ? accounts.map((a, i) => (
+              <Badge key={i} color={a.status === 'Active' ? 'account' : 'ext'}>{a.name}</Badge>
+            )) : <span className="text-sm text-gray-400">No accounts</span>}
+          </div>
+        </Section>
+
+        {/* Extended Privileges */}
+        {extPrivs.length > 0 && (
+          <Section title="Extended Privileges" count={extPrivs.length} icon={<ShieldCheck size={14} className="text-teal-500" />} color="extpriv">
+            <div className="p-3 flex flex-wrap gap-1.5">
+              {extPrivs.map((ep, i) => <Badge key={i} color="extpriv">{ep.name}</Badge>)}
+            </div>
+          </Section>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Extended Privilege detail panel
+const ExtPrivDetail = ({ extpriv, dbName, data }) => {
+  // Find privilege sets that have this extended privilege
+  const privSets = useMemo(() => {
+    if (!data?.databases) return [];
+    const db = data.databases.find(d => d.name === dbName);
+    return (db?.privilegeSets || []).filter(ps => extpriv.privilegeSets?.includes(ps.name));
+  }, [extpriv, dbName, data]);
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="p-5 border-b border-gray-200 bg-white">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 ${C.extpriv.bg} rounded-xl flex items-center justify-center shadow-lg`}>
+            <ShieldCheck size={18} className="text-white" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-800 text-lg">{extpriv.name}</h2>
+            {extpriv.comment && <div className="text-sm text-gray-500">{extpriv.comment}</div>}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto p-4 space-y-3 bg-gray-50">
+        {/* Assigned Privilege Sets */}
+        <Section title="Assigned to Privilege Sets" count={extpriv.privilegeSets?.length || 0} icon={<KeyRound size={14} className="text-orange-500" />} color="privset">
+          <div className="p-3 flex flex-wrap gap-1.5">
+            {(extpriv.privilegeSets || []).length > 0 ? extpriv.privilegeSets.map((ps, i) => (
+              <Badge key={i} color="privset">{ps}</Badge>
+            )) : <span className="text-sm text-gray-400">Not assigned to any privilege sets</span>}
+          </div>
+        </Section>
+
+        {/* Show privilege set details */}
+        {privSets.length > 0 && (
+          <Section title="Privilege Set Details" icon={<Shield size={14} className="text-orange-500" />} color="privset" defaultOpen={false}>
+            <div className="p-3 space-y-2">
+              {privSets.map((ps, i) => (
+                <div key={i} className="text-sm p-2 bg-white rounded-lg border border-gray-100">
+                  <div className="font-medium text-gray-700">{ps.name}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Records: {ps.records} · Layouts: {ps.layouts} · Scripts: {ps.scripts}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Stats view
 const StatsView = ({ data }) => {
   const stats = useMemo(() => {
-    let totals = { tables: 0, fields: 0, tos: 0, layouts: 0, scripts: 0, rels: 0, vls: 0, cfs: 0 };
+    let totals = { tables: 0, fields: 0, tos: 0, layouts: 0, scripts: 0, rels: 0, vls: 0, cfs: 0, accounts: 0, privsets: 0, extprivs: 0 };
     const perDb = [];
 
     for (const db of data.databases) {
@@ -627,6 +858,9 @@ const StatsView = ({ data }) => {
         rels: db.relationships?.length || 0,
         vls: db.valueLists?.length || 0,
         cfs: db.customFunctions?.length || 0,
+        accounts: db.accounts?.length || 0,
+        privsets: db.privilegeSets?.length || 0,
+        extprivs: db.extendedPrivileges?.length || 0,
       };
       perDb.push(dbStats);
       for (const k of Object.keys(totals)) totals[k] += dbStats[k];
@@ -647,6 +881,9 @@ const StatsView = ({ data }) => {
           { label: 'Relationships', value: stats.totals.rels, color: 'rel' },
           { label: 'Value Lists', value: stats.totals.vls, color: 'vl' },
           { label: 'Custom Functions', value: stats.totals.cfs, color: 'cf' },
+          { label: 'Accounts', value: stats.totals.accounts, color: 'account' },
+          { label: 'Privilege Sets', value: stats.totals.privsets, color: 'privset' },
+          { label: 'Ext Privileges', value: stats.totals.extprivs, color: 'extpriv' },
         ].map(s => (
           <div key={s.label} className={`${C[s.color].light} ${C[s.color].border} border rounded-xl p-5 shadow-sm`}>
             <div className={`text-3xl font-bold ${C[s.color].text}`}>{s.value.toLocaleString()}</div>
@@ -1663,6 +1900,9 @@ export default function DDRExplorer() {
     { id: 'rels', label: 'Relationships', icon: 'rel', items: db?.relationships || [] },
     { id: 'vls', label: 'Value Lists', icon: 'vl', items: db?.valueLists || [] },
     { id: 'cfs', label: 'Custom Functions', icon: 'cf', items: db?.customFunctions || [] },
+    { id: 'accounts', label: 'Accounts', icon: 'account', items: db?.accounts || [] },
+    { id: 'privsets', label: 'Privilege Sets', icon: 'privset', items: db?.privilegeSets || [] },
+    { id: 'extprivs', label: 'Ext Privileges', icon: 'extpriv', items: db?.extendedPrivileges || [] },
   ];
 
   const currentCat = categories.find(c => c.id === category);
@@ -1730,6 +1970,9 @@ export default function DDRExplorer() {
     if (category === 'layouts') return <LayoutDetail layout={selected} dbName={db.name} reverseRefs={reverseRefs} onNav={handleNav} />;
     if (category === 'tos') return <TODetail to={selected} dbName={db.name} reverseRefs={reverseRefs} data={data} onNav={handleNav} />;
     if (category === 'rels') return <RelDetail rel={selected} dbName={db.name} onNav={handleNav} />;
+    if (category === 'accounts') return <AccountDetail account={selected} dbName={db.name} data={data} />;
+    if (category === 'privsets') return <PrivSetDetail privset={selected} dbName={db.name} data={data} />;
+    if (category === 'extprivs') return <ExtPrivDetail extpriv={selected} dbName={db.name} data={data} />;
 
     return (
       <div className="p-5">

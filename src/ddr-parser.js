@@ -86,6 +86,9 @@ function parseXML(xmlText) {
     scripts: parseScripts(doc),
     valueLists: parseValueLists(doc),
     customFunctions: parseCustomFunctions(doc),
+    accounts: parseAccounts(doc),
+    privilegeSets: parsePrivilegeSets(doc),
+    extendedPrivileges: parseExtendedPrivileges(doc),
   };
 }
 
@@ -490,7 +493,7 @@ function parseValueLists(doc) {
  */
 function parseCustomFunctions(doc) {
   const cfs = [];
-  
+
   for (const cfEl of doc.querySelectorAll('CustomFunctionCatalog > CustomFunction')) {
     const cf = {
       id: cfEl.getAttribute('id'),
@@ -500,8 +503,93 @@ function parseCustomFunctions(doc) {
     };
     cfs.push(cf);
   }
-  
+
   return cfs;
+}
+
+/**
+ * Parse accounts
+ */
+function parseAccounts(doc) {
+  const accounts = [];
+
+  for (const acctEl of doc.querySelectorAll('AccountCatalog > Account')) {
+    const account = {
+      id: acctEl.getAttribute('id'),
+      name: acctEl.getAttribute('name'),
+      status: acctEl.getAttribute('status') || 'Active',
+      privilegeSet: acctEl.getAttribute('privilegeSet'),
+      managedBy: acctEl.getAttribute('managedBy') || 'FileMaker',
+      emptyPassword: acctEl.getAttribute('emptyPassword') === 'True',
+      changePasswordOnNextLogin: acctEl.getAttribute('changePasswordOnNextLogin') === 'True',
+      description: acctEl.querySelector('Description')?.textContent || '',
+    };
+    accounts.push(account);
+  }
+
+  return accounts;
+}
+
+/**
+ * Parse privilege sets
+ */
+function parsePrivilegeSets(doc) {
+  const sets = [];
+
+  for (const psEl of doc.querySelectorAll('PrivilegesCatalog > PrivilegeSet, PrivilegeSetCatalog > PrivilegeSet')) {
+    const ps = {
+      id: psEl.getAttribute('id'),
+      name: psEl.getAttribute('name'),
+      comment: psEl.getAttribute('comment') || '',
+      // Access permissions
+      printing: psEl.getAttribute('printing') === 'True',
+      exporting: psEl.getAttribute('exporting') === 'True',
+      manageAccounts: psEl.getAttribute('manageAccounts') === 'True',
+      allowModifyPassword: psEl.getAttribute('allowModifyPassword') === 'True',
+      overrideValidationWarning: psEl.getAttribute('overrideValidationWarning') === 'True',
+      idleDisconnect: psEl.getAttribute('idleDisconnect') === 'True',
+      menu: psEl.getAttribute('menu') || 'All',
+      // Password policy
+      passwordExpiry: psEl.getAttribute('passwordExpiry') || '',
+      passwordMinLength: psEl.getAttribute('passwordMinLength') || '',
+      // Record/layout/script access
+      records: psEl.querySelector('Records')?.getAttribute('value') || 'NoAccess',
+      layouts: psEl.querySelector('Layouts')?.getAttribute('value') || 'NoAccess',
+      layoutCreation: psEl.querySelector('Layouts')?.getAttribute('allowCreation') === 'True',
+      scripts: psEl.querySelector('Scripts')?.getAttribute('value') || 'NoAccess',
+      scriptCreation: psEl.querySelector('Scripts')?.getAttribute('allowCreation') === 'True',
+      valueLists: psEl.querySelector('ValueLists')?.getAttribute('value') || 'NoAccess',
+      valueListCreation: psEl.querySelector('ValueLists')?.getAttribute('allowCreation') === 'True',
+    };
+    sets.push(ps);
+  }
+
+  return sets;
+}
+
+/**
+ * Parse extended privileges
+ */
+function parseExtendedPrivileges(doc) {
+  const eps = [];
+
+  for (const epEl of doc.querySelectorAll('ExtendedPrivilegeCatalog > ExtendedPrivilege')) {
+    const ep = {
+      id: epEl.getAttribute('id'),
+      name: epEl.getAttribute('name'),
+      comment: epEl.getAttribute('comment') || '',
+      privilegeSets: [],
+    };
+
+    // Get assigned privilege sets
+    for (const psEl of epEl.querySelectorAll('PrivilegeSetList > PrivilegeSet')) {
+      ep.privilegeSets.push(psEl.getAttribute('name'));
+    }
+
+    eps.push(ep);
+  }
+
+  return eps;
 }
 
 /**
