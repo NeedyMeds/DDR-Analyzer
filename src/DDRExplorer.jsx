@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Search, Database, Table, Layout, FileText, Link2, List, ChevronRight, ChevronDown, ExternalLink, Layers, GitBranch, Grid3X3, Box, Code, Hash, Lock, Zap, Eye, Play, ArrowRight, Filter, X, BarChart3, AlertCircle, Settings, Upload, Sparkles, Shield, Gauge, FileSearch, Trash2, AlertTriangle, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, User, KeyRound, ShieldCheck, Info, Heart, Github } from 'lucide-react';
+import { Search, Database, Table, Layout, FileText, Link2, List, ChevronRight, ChevronDown, ExternalLink, Layers, GitBranch, Grid3X3, Box, Code, Hash, Lock, Zap, Eye, Play, ArrowRight, Filter, X, BarChart3, AlertCircle, Settings, Upload, Sparkles, Shield, Gauge, FileSearch, Trash2, AlertTriangle, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, User, KeyRound, ShieldCheck, Heart } from 'lucide-react';
 import parseXMLFiles, { analyzeDatabase } from './ddr-parser';
 
 // Modern light color palette
@@ -1848,164 +1848,132 @@ const FileUploader = ({ onDataLoaded }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-8">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-xl w-full border border-gray-200">
-        <div className="text-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-8 px-4 overflow-auto">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-violet-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-blue-500/25">
             <Database size={32} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">FileMaker DDR Explorer</h1>
-          <p className="text-gray-500 mt-2">Upload DDR XML files to analyze your database schema</p>
+          <h1 className="text-3xl font-bold text-gray-800">FileMaker DDR Explorer</h1>
+          <p className="text-gray-500 mt-2">Analyze your Database Design Reports</p>
         </div>
 
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-all hover:bg-blue-50/50 group">
-          <Upload size={36} className="mx-auto text-gray-400 mb-3 group-hover:text-blue-500 transition-colors" />
-          <label className="cursor-pointer">
-            <span className="text-blue-500 hover:text-blue-600 font-medium transition-colors">Choose XML files</span>
-            <input
-              type="file"
-              multiple
-              accept=".xml"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </label>
-          <p className="text-xs text-gray-400 mt-2">or drag and drop</p>
-        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Upload Card */}
+          <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Upload size={20} className="text-blue-500" />
+              Upload DDR Files
+            </h2>
 
-        {files.length > 0 && (
-          <div className="mt-5 space-y-2">
-            {files.map((file, i) => (
-              <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                <FileText size={18} className="text-gray-400" />
-                <span className="flex-1 text-sm text-gray-700 truncate">{file.name}</span>
-                <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
-                <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500 transition-colors">
-                  <X size={18} />
-                </button>
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-all hover:bg-blue-50/50 group">
+              <Upload size={32} className="mx-auto text-gray-400 mb-2 group-hover:text-blue-500 transition-colors" />
+              <label className="cursor-pointer">
+                <span className="text-blue-500 hover:text-blue-600 font-medium transition-colors">Choose XML files</span>
+                <input
+                  type="file"
+                  multiple
+                  accept=".xml"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </label>
+              <p className="text-xs text-gray-400 mt-1">or drag and drop</p>
+            </div>
+
+            {files.length > 0 && (
+              <div className="mt-4 space-y-2 max-h-40 overflow-auto">
+                {files.map((file, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+                    <FileText size={16} className="text-gray-400 flex-shrink-0" />
+                    <span className="flex-1 text-sm text-gray-700 truncate">{file.name}</span>
+                    <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                    <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500 transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
+            {error && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600 flex items-center gap-2">
+                <AlertCircle size={16} />
+                {error}
+              </div>
+            )}
+
+            <button
+              onClick={parseFiles}
+              disabled={loading || files.length === 0}
+              className={`mt-4 w-full py-3 rounded-xl font-medium transition-all ${
+                loading || files.length === 0
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-500 to-violet-500 text-white hover:shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5'
+              }`}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Sparkles size={18} className="animate-spin" />
+                  Parsing...
+                </span>
+              ) : 'Analyze DDR Files'}
+            </button>
           </div>
-        )}
 
-        {error && (
-          <div className="mt-5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 flex items-center gap-3">
-            <AlertCircle size={18} />
-            {error}
-          </div>
-        )}
-
-        <button
-          onClick={parseFiles}
-          disabled={loading || files.length === 0}
-          className={`mt-6 w-full py-3.5 rounded-xl font-medium transition-all ${
-            loading || files.length === 0
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-blue-500 to-violet-500 text-white hover:shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5'
-          }`}
-        >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <Sparkles size={18} className="animate-spin" />
-              Parsing...
-            </span>
-          ) : 'Analyze DDR Files'}
-        </button>
-
-        <div className="mt-6 pt-5 border-t border-gray-200 flex items-center justify-center gap-6 text-sm">
-          <a
-            href="https://github.com/NeedyMeds/DDR-Analyzer"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <Github size={16} />
-            GitHub
-          </a>
-          <span className="text-gray-300">|</span>
-          <span className="flex items-center gap-1.5 text-gray-500">
-            <Shield size={16} />
-            100% client-side — your data never leaves your browser
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// About/Privacy View
-const AboutView = ({ onClose }) => (
-  <div className="flex-1 overflow-auto bg-gray-50 p-8">
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-violet-500 p-8 text-white">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-              <Database size={32} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">DDR Explorer</h1>
-              <p className="text-blue-100">FileMaker Database Design Report Analyzer</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-8 space-y-8">
-          {/* About */}
-          <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <Heart size={18} className="text-pink-500" />
+          {/* About Card */}
+          <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Heart size={20} className="text-pink-500" />
               About This Tool
             </h2>
-            <p className="text-gray-600 leading-relaxed">
-              DDR Explorer is a <strong>non-commercial, open-source tool</strong> built just for fun by FileMaker developers
+            <p className="text-gray-600 text-sm leading-relaxed">
+              DDR Explorer is a <strong>non-commercial tool</strong> built just for fun by FileMaker developers
               who wanted a better way to explore and analyze Database Design Reports. It's offered freely to the
               FileMaker community with no strings attached.
             </p>
-          </section>
+          </div>
+        </div>
 
-          {/* Privacy & Data */}
-          <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <Shield size={18} className="text-emerald-500" />
+        {/* Privacy & Disclaimer Row */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Privacy Card */}
+          <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Shield size={20} className="text-emerald-500" />
               Privacy & Data Storage
             </h2>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
-              <p className="text-emerald-800 font-medium">Your data never leaves your browser.</p>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4">
+              <p className="text-emerald-800 font-medium text-sm">Your data never leaves your browser.</p>
             </div>
-            <ul className="text-gray-600 space-y-2">
+            <ul className="text-gray-600 text-sm space-y-2">
               <li className="flex items-start gap-2">
-                <span className="text-emerald-500 mt-1">✓</span>
-                <span>All DDR XML files are processed <strong>entirely in your browser</strong> using JavaScript</span>
+                <span className="text-emerald-500 mt-0.5">✓</span>
+                <span>All DDR XML files are processed <strong>entirely in your browser</strong></span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-emerald-500 mt-1">✓</span>
+                <span className="text-emerald-500 mt-0.5">✓</span>
                 <span>No data is uploaded to any server — there is no server</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-emerald-500 mt-1">✓</span>
+                <span className="text-emerald-500 mt-0.5">✓</span>
                 <span>No cookies, no tracking, no analytics</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-emerald-500 mt-1">✓</span>
+                <span className="text-emerald-500 mt-0.5">✓</span>
                 <span>When you close or refresh the page, all parsed data is gone</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-500 mt-1">✓</span>
-                <span>Your DDR files remain on your local machine</span>
-              </li>
             </ul>
-          </section>
+          </div>
 
-          {/* Disclaimer */}
-          <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <AlertTriangle size={18} className="text-amber-500" />
+          {/* Disclaimer Card */}
+          <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <AlertTriangle size={20} className="text-amber-500" />
               Disclaimer
             </h2>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
               <p className="mb-2">
                 <strong>This tool is provided "as-is" without warranty of any kind.</strong>
               </p>
@@ -2015,44 +1983,17 @@ const AboutView = ({ onClose }) => (
                 or FileMaker, Inc.
               </p>
             </div>
-          </section>
-
-          {/* Source */}
-          <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <Github size={18} className="text-gray-700" />
-              Open Source
-            </h2>
-            <p className="text-gray-600">
-              This project is open source and available on GitHub. Contributions, bug reports, and feature
-              requests are welcome!
-            </p>
-            <a
-              href="https://github.com/NeedyMeds/DDR-Analyzer"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              <Github size={16} />
-              View on GitHub
-            </a>
-          </section>
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 border-t border-gray-200 px-8 py-4 flex justify-between items-center">
-          <p className="text-sm text-gray-500">Made with ❤️ for the FileMaker community</p>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
-          >
-            Back to Explorer
-          </button>
+        <div className="text-center text-sm text-gray-500 pt-4">
+          Made with ❤️ for the FileMaker community
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Main app component
 export default function DDRExplorer() {
@@ -2206,24 +2147,10 @@ export default function DDRExplorer() {
             </button>
           ))}
         </div>
-
-        <button
-          onClick={() => setView('about')}
-          className={`p-2 rounded-lg transition-all ${
-            view === 'about'
-              ? 'bg-blue-100 text-blue-600'
-              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-          }`}
-          title="About & Privacy"
-        >
-          <Info size={20} />
-        </button>
       </div>
 
       {/* Main content */}
-      {view === 'about' ? (
-        <AboutView onClose={() => setView('explorer')} />
-      ) : view === 'search' ? (
+      {view === 'search' ? (
         <div className="flex-1 overflow-auto bg-gray-50">
           <GlobalSearchView data={data} onNav={handleNav} />
         </div>
